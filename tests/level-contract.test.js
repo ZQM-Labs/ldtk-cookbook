@@ -14,7 +14,24 @@ test('starter fixture has unique, in-bounds checkpoints', () => {
 });
 
 test('rejects a missing levels array', () => {
-  assert.match(validateLevelExport({})[0], /root\.levels/);
+  assert.match(validateLevelExport({})[0], /root\\.levels/);
+});
+
+test('rejects malformed layer and entity collections instead of silently skipping them', () => {
+  const badLayer = structuredClone(fixture);
+  badLayer.levels[0].layerInstances[0] = null;
+  assert.ok(validateLevelExport(badLayer).some((error) => /layerInstances\\[0\\] must be an object/.test(error)));
+
+  const badEntities = structuredClone(fixture);
+  badEntities.levels[0].layerInstances[0].entityInstances = {};
+  assert.ok(validateLevelExport(badEntities).some((error) => /entityInstances must be an array/.test(error)));
+});
+
+test('rejects malformed checkpoint fields instead of treating them as absent', () => {
+  const input = structuredClone(fixture);
+  const entities = input.levels[0].layerInstances[0].entityInstances;
+  entities[0].fieldInstances = [null];
+  assert.ok(validateLevelExport(input).some((error) => /fieldInstances\\[0\\] must be an object/.test(error)));
 });
 
 test('rejects duplicate checkpoint identifiers', () => {
