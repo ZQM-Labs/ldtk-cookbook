@@ -9,7 +9,7 @@ function validateLevelExport(document) {
   const levelIds = new Set();
   for (const [levelIndex, level] of document.levels.entries()) {
     const prefix = `levels[${levelIndex}]`;
-    if (!level || typeof level !== 'object') {
+    if (!level || typeof level !== 'object' || Array.isArray(level)) {
       errors.push(`${prefix} must be an object`);
       continue;
     }
@@ -31,10 +31,24 @@ function validateLevelExport(document) {
 
     const checkpointIds = new Set();
     for (const [layerIndex, layer] of level.layerInstances.entries()) {
-      if (!layer || !Array.isArray(layer.entityInstances)) continue;
+      const layerPrefix = `${prefix}.layerInstances[${layerIndex}]`;
+      if (!layer || typeof layer !== 'object' || Array.isArray(layer)) {
+        errors.push(`${layerPrefix} must be an object`);
+        continue;
+      }
+      // Non-entity layers may omit entityInstances, but if present it must be an array.
+      if (layer.entityInstances === undefined) continue;
+      if (!Array.isArray(layer.entityInstances)) {
+        errors.push(`${layerPrefix}.entityInstances must be an array when present`);
+        continue;
+      }
       for (const [entityIndex, entity] of layer.entityInstances.entries()) {
-        if (!entity || entity.__identifier !== 'Checkpoint') continue;
-        const entityPrefix = `${prefix}.layerInstances[${layerIndex}].entityInstances[${entityIndex}]`;
+        const entityPrefix = `${layerPrefix}.entityInstances[${entityIndex}]`;
+        if (!entity || typeof entity !== 'object' || Array.isArray(entity)) {
+          errors.push(`${entityPrefix} must be an object`);
+          continue;
+        }
+        if (entity.__identifier !== 'Checkpoint') continue;
         if (!Array.isArray(entity.px) || entity.px.length !== 2 ||
             !entity.px.every(Number.isFinite)) {
           errors.push(`${entityPrefix}.px must contain two finite coordinates`);
@@ -44,8 +58,30 @@ function validateLevelExport(document) {
             !Number.isFinite(entity.height) || entity.height <= 0) {
           errors.push(`${entityPrefix} width and height must be positive numbers`);
         }
-        const fields = Array.isArray(entity.fieldInstances) ? entity.fieldInstances : [];
-        const idField = fields.find((field) => field && field.__identifier === 'checkpoint_id');
+        if (!Array.isArray(entity.fieldInstances)) {
+          errors.push(`${entityPrefix}.fieldInstances must be an array`);
+          continue;
+        }
+        const fieldIds = new Set();
+        for (const [fieldIndex, field] of entity.fieldInstances.entries()) {
+          const fieldPrefix = `${entityPrefix}.fieldInstances[${fieldIndex}]`;
+          if (!field || typeof field !== 'object' || Array.isArray(field)) {
+            errors.push(`${fieldPrefix} must be an object`);
+            continue;
+          }
+          if (typeof field.__identifier !== 'string' || !field.__identifier.trim()) {
+            errors.push(`${fieldPrefix}.__identifier must be a non-empty string`);
+            continue;
+          }
+          if (fieldIds.has(field.__identifier)) {
+            errors.push(`${entityPrefix} has duplicate field: ${field.__identifier}`);
+          } else {
+            fieldIds.add(field.__identifier);
+          }
+        }
+        const idField = entity.fieldInstances.find((field) =>
+          field && typeof field === 'object' && field.__identifier === 'checkpoint_id'
+        );
         const checkpointId = idField && idField.__value;
         if (typeof checkpointId !== 'string' || !checkpointId.trim()) {
           errors.push(`${entityPrefix} requires a non-empty checkpoint_id`);
@@ -54,11 +90,9 @@ function validateLevelExport(document) {
         } else {
           checkpointIds.add(checkpointId);
         }
-        if (Number.isFinite(level.pxWid) && Number.isFinite(level.pxHei) &&
-            entity.px[0] >= 0 && entity.px[1] >= 0 &&
-            Number.isFinite(entity.width) && Number.isFinite(entity.height) &&
-            (entity.px[0] + entity.width > level.pxWid ||
-             entity.px[1] + entity.height > level.pxHei)) {
+        if (entity.px[0] < 0 || entity.px[1] < 0 ||
+            entity.px[0] + entity.width > level.pxWid ||
+            entity.px[1] + entity.height > level.pxHei) {
           errors.push(`${entityPrefix} lies outside level pixel bounds`);
         }
       }
