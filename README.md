@@ -2,54 +2,57 @@
 
 Practical, testable patterns for building data-driven 2D game levels with [LDtk](https://ldtk.io/), from level structure and entity contracts to export validation and runtime integration.
 
-> **Status:** starter repository. The examples in this cookbook are deliberately small and contract-tested. A passing structural test does not prove that a map renders correctly in LDtk or imports correctly into a game engine; those checks are called out explicitly.
+> **Status:** first contract-tested scaffold. The checked-in JSON is a deliberately minimal LDtk-shaped export fixture, not a claim that a project was opened, saved, or exported by the LDtk editor. Validate real editor exports before relying on the schema in production.
 
-## Goals
+## What is here
 
-- Keep level data portable and reviewable in version control.
-- Give entities and gameplay markers stable identifiers and explicit fields.
-- Validate exported JSON before it reaches a game build.
-- Separate editor-authored content from runtime assumptions.
-- Document what is automated versus what still needs a human/editor check.
-
-## Planned example path
-
-1. **First level** — a minimal level and world layout with stable identifiers.
-2. **Gameplay entities** — typed fields, required-field checks, and entity reference validation.
-3. **Export contract** — validate exported LDtk JSON shape, identifiers, dimensions, and references.
-4. **Runtime adapter** — map LDtk entities and levels to a small engine-neutral checkpoint contract.
-5. **Release validation** — deterministic checks for missing assets, broken references, and unsupported schema changes.
+- `examples/01-first-level/level-contract.json` — a small level with two stable checkpoint IDs and explicit manual-fallback fields.
+- `scripts/validate-level.js` — a dependency-free contract validator for level identifiers, dimensions, checkpoint IDs, and checkpoint bounds.
+- `tests/level-contract.test.js` — regression tests for valid input, missing structure, duplicate IDs, out-of-bounds entities, and invalid dimensions.
+- `.github/workflows/examples.yml` — Node 20 test workflow.
 
 ## Quick start
 
-Requirements: Node.js 20 or newer. The first example uses Node's built-in test runner and does not require the LDtk editor.
+Requirements: Node.js 20 or newer.
 
 ```sh
 npm test
+node - <<'NODE'
+const fs = require('node:fs');
+const { validateLevelExport } = require('./scripts/validate-level');
+const data = JSON.parse(fs.readFileSync('examples/01-first-level/level-contract.json', 'utf8'));
+const errors = validateLevelExport(data);
+if (errors.length) {
+  console.error(errors.join('\n'));
+  process.exit(1);
+}
+console.log('Level contract valid');
+NODE
 ```
 
-The tests validate the checked-in example contract. To validate editor compatibility, open the project in the LDtk editor and export it using the version documented by that example. Editor/runtime checks are not implied by the Node test suite.
+## Contract decisions
 
-## Repository layout
+- Level identifiers must be non-empty and unique.
+- Pixel dimensions must be positive integers.
+- Every `Checkpoint` entity must have a non-empty, unique `checkpoint_id` within its level.
+- Checkpoint positions must be finite coordinate pairs and checkpoint rectangles must remain inside the level bounds.
+- The validator is intentionally a narrow example contract, not a complete validator for every LDtk version or every layer/entity type.
 
-```text
-examples/              Small, self-contained level-design examples
-scripts/               Reusable validation helpers
- tests/                 Contract tests
-.github/workflows/      Continuous integration
-```
+## Next examples
 
-## Quality and safety rules
+1. Typed gameplay fields and required-field validation.
+2. Entity references and missing-target detection.
+3. A pinned-version LDtk export fixture and schema-drift check.
+4. Engine adapter examples for Godot and Phaser.
+5. Asset/reference checks and a release validation report.
 
-- Prefer stable string identifiers over assumptions about generated numeric IDs.
-- Validate references and required fields; fail with actionable errors rather than silently dropping content.
-- Do not commit generated exports that contain machine-specific absolute paths.
-- Keep tests deterministic and offline; do not download executable assets in CI.
-- Label editor-rendering and engine-import checks as manual until automated with a pinned toolchain.
+## Editor/runtime verification
+
+Open a real project in the LDtk editor, export JSON, and run the contract validator against that export before adopting this fixture as a production contract. Editor rendering, world-layout behavior, and game-engine import are not covered by the Node tests.
 
 ## Contribution checklist
 
-- [ ] Example includes a purpose, input format, and expected output.
+- [ ] Example includes purpose, input format, and expected output.
 - [ ] Identifiers and entity fields are documented.
 - [ ] Invalid input has a regression test.
 - [ ] `npm test` passes locally and in CI.
@@ -58,4 +61,4 @@ scripts/               Reusable validation helpers
 
 ## License
 
-Unless otherwise stated, repository examples are provided under the MIT License. See `LICENSE` when added; individual third-party assets retain their own licenses.
+Unless otherwise stated, code examples are MIT-licensed. Individual third-party assets retain their own licenses.
