@@ -1,0 +1,65 @@
+{
+  "iid": "world-starter-0001",
+  "jsonVersion": "1.5.3",
+  "appBuildId": 0,
+  "worldLayout": "Free",
+  "levels": [
+    {
+      "iid": "level-village-0001",
+      "identifier": "Village",
+      "worldX": 0,
+      "worldY": 0,
+      "pxWid": 256,
+      "pxHei": 192,
+      "layerInstances": [
+        {
+          "__identifier": "Entities",
+          "__type": "Entities",
+          "__cWid": 16,
+          "__cHei": 12,
+          "__gridSize": 16,
+          "entityInstances": [
+            {
+              "__identifier": "Checkpoint",
+              "iid": "entity-start-0001",
+              "px": [32, 32],
+              "width": 16,
+              "height": 16,
+              "fieldInstances": [
+                {
+                  "__identifier": "checkpoint_id",
+                  "__type": "String",
+                  "__value": "start"
+                },
+                {
+                  "__identifier": "manual_fallback_allowed",
+                  "__type": "Bool",
+                  "__value": true
+                }
+              ]
+            },
+            {
+              "__identifier": "Checkpoint",
+              "iid": "entity-finish-0001",
+              "px": [208, 144],
+              "width": 16,
+              "height": 16,
+              "fieldInstances": [
+                {
+                  "__identifier": "checkpoint_id",
+                  "__type": "String",
+                  "__value": "finish"
+                },
+                {
+                  "__identifier": "manual_fallback_allowed",
+                  "__type": "Bool",
+                  "__value": true
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
