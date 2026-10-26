@@ -1,0 +1,12 @@
+{
+  "name": "@zqm-labs/ldtk-cookbook",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Contract-tested patterns for LDtk level data",
+  "scripts": {
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
